@@ -7,7 +7,9 @@
 		"myapp"
 	],
 	"dependencies": {
-		"oracledb": "^5.1.0"
+		"oracledb": "^5.1.0",
+		"express": "latest",
+		"body-parser": "latest"
 	},
 	"author": "You",
 	"license": "MIT"
