@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="oracleMapper">  
+	<select id="selectEmpInfo">
+		SELECT
+		*
+		FROM
+		EMP 
+		WHERE EMPNO IS NOT NULL
+		<if test="empno != null and empno != ''" >
+			AND EMPNO = #{empno}
+		</if>
+	</select>
+
+	<insert id="insertEmpInfo">
+		INSERT INTO EMP( EMPNO ,ENAME, JOB, MGR, HIREDATE, SAL, COMM, DEPTNO)
+		VALUES( #{empno} ,#{ename}, #{job}, #{mgr}, SYSDATE, #{sal}, #{comm}, #{deptno} )
+	</insert>  
+</mapper>

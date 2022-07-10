@@ -9,7 +9,8 @@
 	"dependencies": {
 		"oracledb": "^5.1.0",
 		"express": "latest",
-		"body-parser": "latest"
+		"body-parser": "latest",
+		"mybatis-mapper": "latest"
 	},
 	"author": "You",
 	"license": "MIT"

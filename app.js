@@ -22,6 +22,12 @@ app.use(bodyParser.json());
 // 라우터 객체 참조
 var router = express.Router();
 
+// mybatis-mapper 추가
+var mybatisMapper = require('mybatis-mapper');
+
+// Mapper Load
+mybatisMapper.createMapper(['./mapper/oracle-mapper.xml']);
+
 // Oracle Auto Commit 설정
 oracledb.autoCommit = true;
 
@@ -39,9 +45,20 @@ router.post('/dbTestSelect', function(request, response) {
                 return;
             }
 
-            let query =
-                'select * ' +
-                '   from emp';
+            //조회할 파라미터
+            var param = {
+                empno: request.body.empno
+            }
+
+            // 쿼리문 형식
+            let format = {
+                language: 'sql',
+                indent: '  '
+            };
+            //첫번째는 xml의 namespace, 두번째는 해당 xml id값, 세번째는 파라미터, 마지막은 포맷.
+            let query = mybatisMapper.getStatement('oracleMapper', 'selectEmpInfo', param, format);
+
+            console.log(query); // 쿼리 출력
 
             connection.execute(query, [], function(err, result) {
                 if (err) {
@@ -50,23 +67,9 @@ router.post('/dbTestSelect', function(request, response) {
                     return;
                 }
                 console.log(result.rows); // 데이터
-                doRelease(connection, result.rows); // Connection 해제
+                doRelease(response, connection, result.rows); // Connection 해제
             });
         });
-
-    // DB 연결 해제
-    function doRelease(connection, rowList) {
-        connection.release(function(err) {
-            if (err) {
-                console.error(err.message);
-            }
-
-            // DB종료까지 모두 완료되었을 시 응답 데이터 반환
-            console.log('list size: ' + rowList.length);
-
-            response.send(rowList);
-        });
-    }
 });
 
 
@@ -84,45 +87,52 @@ router.post('/dbTestInsert', function(request, response) {
                 return;
             }
 
-            // PrepareStatement 구조
-            let query =
-                'INSERT INTO EMP( EMPNO ,ENAME, JOB, MGR, HIREDATE, SAL, COMM, DEPTNO) ' +
-                'VALUES( :EMPNO ,:ENAME, :JOB, :MGR, SYSDATE, :SAL, :COMM, :DEPTNO )';
+            //조회할 파라미터
+            var param = {
+                empno: Number(request.body.empno),
+                ename: request.body.ename,
+                job: request.body.job,
+                mgr: request.body.mgr,
+                sal: Number(request.body.sal),
+                comm: Number(request.body.comm),
+                deptno: Number(request.body.deptno)
+            }
 
-            let binddata = [
-                Number(request.body.empno),
-                request.body.ename,
-                request.body.job,
-                request.body.mgr,
-                Number(request.body.sal),
-                Number(request.body.comm),
-                Number(request.body.deptno)
-            ];
+            // 쿼리문 형식
+            let format = {
+                language: 'sql',
+                indent: '  '
+            };
+            //첫번째는 xml의 namespace, 두번째는 해당 xml id값, 세번째는 파라미터, 마지막은 포맷.
+            let query = mybatisMapper.getStatement('oracleMapper', 'insertEmpInfo', param, format);
 
-            connection.execute(query, binddata, function(err, result) {
+            console.log(query); // 쿼리 출력
+
+            connection.execute(query, [], function(err, result) {
                 if (err) {
                     console.error(err.message);
                     doRelease(connection);
                     return;
                 }
                 console.log('Row Insert: ' + result.rowsAffected);
-
-                doRelease(connection, result.rowsAffected); // Connection 해제
+                doRelease(response, connection, result.rowsAffected); // Connection 해제
             });
         });
 
-    // DB 연결 해제
-    function doRelease(connection, result) {
-        connection.release(function(err) {
-            if (err) {
-                console.error(err.message);
-            }
-
-            // DB종료까지 모두 완료되었을 시 응답 데이터 반환
-            response.send('' + result);
-        });
-    }
 });
+
+
+// DB 연결 해제
+function doRelease(response, connection, result) {
+    connection.release(function(err) {
+        if (err) {
+            console.error(err.message);
+        }
+
+        // DB종료까지 모두 완료되었을 시 응답 데이터 반환
+        response.send('' + result);
+    });
+}
 
 // 라우터 객체를 app 객체에 등록
 app.use('/', router);
@@ -137,4 +147,12 @@ app.all('*', function(req, res) {
 // Express 서버 시작
 http.createServer(app).listen(app.get('port'), function() {
     console.log('Express server listening on port ' + app.get('port'));
+});
+
+// 예상치 못한 에러처리
+process.on("uncaughtException", function(err) {
+    //비정상 에러시 로그를 넘길 수 있도록 timeout을 준다. 
+    setTimeout(function() {
+        logger.error("[[[ Uncaught Exception ]]]\n" + err.stack);
+    }, 1000);
 });
